@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magic Fridge AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f0f4f8;
+      --surface: #ffffff;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #dc2626;
+      --danger-hover: #b91c1c;
+      --warning: #d97706;
+      --warning-hover: #b45309;
+      --success: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 10px;
+      --shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 1.1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      box-shadow: 0 2px 8px rgba(37,99,235,.3);
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; }
+    header span { font-size: 1.7rem; }
+
+    /* ── Layout ── */
+    main {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1.25rem;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 780px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1.1rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+    }
+
+    /* ── Form ── */
+    .form-group { display: flex; flex-direction: column; gap: .3rem; margin-bottom: .9rem; }
+    label { font-size: .82rem; font-weight: 500; color: var(--text-muted); }
+    input, select {
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      padding: .5rem .75rem;
+      font-size: .92rem;
+      color: var(--text);
+      transition: border-color .15s;
+      outline: none;
+      background: var(--bg);
+    }
+    input:focus, select:focus { border-color: var(--primary); background: #fff; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .4rem;
+      padding: .55rem 1.1rem;
+      border: none;
+      border-radius: 7px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-warning:hover { background: var(--warning-hover); }
+    .btn-danger  { background: var(--danger);  color: #fff; }
+    .btn-danger:hover  { background: var(--danger-hover); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-cancel  { background: var(--border); color: var(--text-muted); }
+    .btn-cancel:hover { background: #cbd5e1; }
+    .btn-full { width: 100%; margin-top: .3rem; }
+
+    #form-actions { display: flex; gap: .6rem; }
+    #btn-cancel-edit { display: none; }
+
+    /* ── Table ── */
+    .right-col { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    thead th {
+      text-align: left;
+      padding: .6rem .85rem;
+      font-size: .78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+      border-bottom: 2px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    td { padding: .65rem .85rem; vertical-align: middle; }
+
+    .badge {
+      display: inline-block;
+      padding: .2rem .55rem;
+      border-radius: 99px;
+      font-size: .73rem;
+      font-weight: 600;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .badge.FRUTA     { background: #fef9c3; color: #854d0e; }
+    .badge.LEGUME    { background: #dcfce7; color: #166534; }
+    .badge.VERDURA   { background: #d1fae5; color: #065f46; }
+    .badge.BEBIDA    { background: #dbeafe; color: #1d4ed8; }
+    .badge.CARNE     { background: #fee2e2; color: #991b1b; }
+    .badge.LATICINIO { background: #f3e8ff; color: #6b21a8; }
+    .badge.DOCE      { background: #fce7f3; color: #9d174d; }
+    .badge.CONGELADO { background: #e0f2fe; color: #075985; }
+
+    .actions { display: flex; gap: .4rem; }
+    .btn-sm { padding: .32rem .7rem; font-size: .8rem; border-radius: 6px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--text-muted);
+      font-size: .9rem;
+    }
+
+    /* ── Recipe ── */
+    #btn-generate {
+      width: 100%;
+      padding: .75rem;
+      font-size: 1rem;
+    }
+    #recipe-output {
+      display: none;
+      margin-top: 1rem;
+      background: #f8fafc;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      font-size: .9rem;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      color: var(--text);
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .loading { color: var(--text-muted); font-style: italic; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1e293b;
+      color: #fff;
+      padding: .7rem 1.2rem;
+      border-radius: 8px;
+      font-size: .88rem;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      z-index: 999;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <span>🧊</span>
+  <h1>Magic Fridge AI</h1>
+</header>
+
+<main>
+  <!-- ── Form ── -->
+  <div class="card">
+    <h2 id="form-title">➕ Adicionar Alimento</h2>
+
+    <input type="hidden" id="edit-id" />
+
+    <div class="form-group">
+      <label for="nome">Nome</label>
+      <input type="text" id="nome" placeholder="Ex: Leite" />
+    </div>
+
+    <div class="form-group">
+      <label for="categoria">Categoria</label>
+      <select id="categoria">
+        <option value="">Selecione...</option>
+        <option value="FRUTA">Fruta</option>
+        <option value="LEGUME">Legume</option>
+        <option value="VERDURA">Verdura</option>
+        <option value="BEBIDA">Bebida</option>
+        <option value="CARNE">Carne</option>
+        <option value="LATICINIO">Laticínio</option>
+        <option value="DOCE">Doce</option>
+        <option value="CONGELADO">Congelado</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="quantidade">Quantidade</label>
+      <input type="number" id="quantidade" min="1" placeholder="Ex: 2" />
+    </div>
+
+    <div class="form-group">
+      <label for="validade">Validade</label>
+      <input type="date" id="validade" />
+    </div>
+
+    <div id="form-actions">
+      <button class="btn btn-primary btn-full" id="btn-submit" onclick="submitForm()">Adicionar</button>
+      <button class="btn btn-cancel btn-full" id="btn-cancel-edit" onclick="cancelEdit()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ── Right column ── -->
+  <div class="right-col">
+
+    <!-- Table -->
+    <div class="card">
+      <h2>🧺 Itens na Geladeira</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Qtd</th>
+              <th>Validade</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="food-table-body">
+            <tr><td colspan="5"><div class="empty-state">Carregando...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recipe -->
+    <div class="card">
+      <h2>🤖 Gerar Receita com IA</h2>
+      <button class="btn btn-success" id="btn-generate" onclick="generateRecipe()">
+        Gerar Receita com os Ingredientes
+      </button>
+      <div id="recipe-output"></div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+  const API = '';
+
+  // ── Toast ──────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ── Listar ─────────────────────────────────────────────
+  async function loadItems() {
+    try {
+      const res = await fetch(`${API}/food`);
+      const items = await res.json();
+      renderTable(items);
+    } catch {
+      document.getElementById('food-table-body').innerHTML =
+        '<tr><td colspan="5"><div class="empty-state">Erro ao carregar itens.</div></td></tr>';
+    }
+  }
+
+  function renderTable(items) {
+    const tbody = document.getElementById('food-table-body');
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Nenhum alimento cadastrado ainda.</div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map(item => `
+      <tr>
+        <td><strong>${item.nome}</strong></td>
+        <td><span class="badge ${item.categoria}">${formatCategoria(item.categoria)}</span></td>
+        <td>${item.quantidade}</td>
+        <td>${formatDate(item.validade)}</td>
+        <td>
+          <div class="actions">
+            <button class="btn btn-warning btn-sm" onclick="startEdit(${item.id}, '${item.nome}', '${item.categoria}', ${item.quantidade}, '${item.validade}')">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteItem(${item.id})">Excluir</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function formatCategoria(c) {
+    const map = {
+      FRUTA:'Fruta', LEGUME:'Legume', VERDURA:'Verdura', BEBIDA:'Bebida',
+      CARNE:'Carne', LATICINIO:'Laticínio', DOCE:'Doce', CONGELADO:'Congelado'
+    };
+    return map[c] || c;
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}`;
+  }
+
+  // ── Formulário ─────────────────────────────────────────
+  function getFormData() {
+    return {
+      nome:      document.getElementById('nome').value.trim(),
+      categoria: document.getElementById('categoria').value,
+      quantidade: parseInt(document.getElementById('quantidade').value),
+      validade:  document.getElementById('validade').value
+    };
+  }
+
+  function clearForm() {
+    document.getElementById('edit-id').value = '';
+    document.getElementById('nome').value = '';
+    document.getElementById('categoria').value = '';
+    document.getElementById('quantidade').value = '';
+    document.getElementById('validade').value = '';
+    document.getElementById('form-title').textContent = '➕ Adicionar Alimento';
+    document.getElementById('btn-submit').textContent = 'Adicionar';
+    document.getElementById('btn-submit').className = 'btn btn-primary btn-full';
+    document.getElementById('btn-cancel-edit').style.display = 'none';
+  }
+
+  function startEdit(id, nome, categoria, quantidade, validade) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('nome').value = nome;
+    document.getElementById('categoria').value = categoria;
+    document.getElementById('quantidade').value = quantidade;
+    document.getElementById('validade').value = validade;
+    document.getElementById('form-title').textContent = '✏️ Editar Alimento';
+    document.getElementById('btn-submit').textContent = 'Salvar Alterações';
+    document.getElementById('btn-submit').className = 'btn btn-warning btn-full';
+    document.getElementById('btn-cancel-edit').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cancelEdit() {
+    clearForm();
+  }
+
+  async function submitForm() {
+    const id = document.getElementById('edit-id').value;
+    const data = getFormData();
+
+    if (!data.nome || !data.categoria || !data.quantidade || !data.validade) {
+      showToast('Preencha todos os campos.');
+      return;
+    }
+
+    try {
+      if (id) {
+        await fetch(`${API}/food/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        showToast('Alimento atualizado!');
+      } else {
+        await fetch(`${API}/food`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        showToast('Alimento adicionado!');
+      }
+      clearForm();
+      loadItems();
+    } catch {
+      showToast('Erro ao salvar. Tente novamente.');
+    }
+  }
+
+  // ── Deletar ────────────────────────────────────────────
+  async function deleteItem(id) {
+    if (!confirm('Tem certeza que quer remover este alimento?')) return;
+    try {
+      await fetch(`${API}/food/${id}`, { method: 'DELETE' });
+      showToast('Alimento removido!');
+      loadItems();
+    } catch {
+      showToast('Erro ao remover.');
+    }
+  }
+
+  // ── Receita ────────────────────────────────────────────
+  async function generateRecipe() {
+    const btn = document.getElementById('btn-generate');
+    const output = document.getElementById('recipe-output');
+
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+    output.style.display = 'block';
+    output.className = 'loading';
+    output.textContent = 'Aguarde, a IA está criando sua receita...';
+
+    try {
+      const res = await fetch(`${API}/generate`);
+      if (!res.ok) { throw new Error(); }
+      const text = await res.text();
+      output.className = '';
+      output.textContent = text;
+    } catch {
+      output.className = '';
+      output.textContent = 'Erro ao gerar receita. Verifique sua chave de API.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Gerar Receita com os Ingredientes';
+    }
+  }
+
+  // ── Init ───────────────────────────────────────────────
+  loadItems();
+</script>
+
+</body>
+</html>
